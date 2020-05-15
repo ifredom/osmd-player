@@ -1,8 +1,8 @@
 import Soundfont from "soundfont-player";
 import axios from "axios";
-import { OpenSheetMusicDisplay } from "opensheetmusicdisplay";
+import { OpenSheetMusicDisplay, Cursor } from "opensheetmusicdisplay";
 
-import SoundService from "./core/SoundService";
+import InstrumentService from "./core/InstrumentService";
 
 import { ArticulationStyle } from "./enum/NotePlaybackOptions";
 import Subsection from "./Subsection";
@@ -38,7 +38,8 @@ export default class MusicEngine {
     this.scoreUrl = null;
 
     // 音频服务
-    this.SoundService = new SoundService();
+    this.InstrumentService = new InstrumentService();
+    this.InstrumentService.init(this.ac);
 
     this.cursor = null;
     this.sheet = null;
@@ -106,7 +107,11 @@ export default class MusicEngine {
       this.initControlStave();
       this.sheet = this.osmd.sheet;
       this.scoreInstruments = this.sheet.instruments;
+      // this.cursor = new Cursor(this.el, this.osmd);
       this.cursor = this.osmd.cursor;
+
+      console.log(this.cursor);
+
       this.denominator = this.sheet.playbackSettings.rhythm.denominator;
       if (this.sheet.HasBPMInfo) {
         this.setBpm(this.sheet.DefaultStartTempoInBpm);
@@ -130,7 +135,9 @@ export default class MusicEngine {
   async _loadInstruments() {
     const playerPromises = [];
     for (const i of this.sheet.Instruments) {
-      playerPromises.push(this.SoundService.loadInstrument(i.MidiInstrumentId));
+      playerPromises.push(
+        this.InstrumentService.loadInstrument(i.MidiInstrumentId)
+      );
     }
     await Promise.all(playerPromises);
 
@@ -185,7 +192,7 @@ export default class MusicEngine {
     }
 
     for (const [midiId, notes] of scheduledNotes) {
-      this.SoundService.schedule(
+      this.InstrumentService.schedule(
         midiId,
         this.ac.currentTime + audioDelay,
         notes
@@ -198,6 +205,14 @@ export default class MusicEngine {
         Math.max(0, audioDelay * 1000 - 40)
       )
     ); // Subtracting 40 milliseconds to compensate for update delay
+  }
+
+  // Used to avoid duplicate cursor movements after a rapid pause/resume action
+  _clearTimeouts() {
+    for (let h of this.timeoutHandles) {
+      clearTimeout(h);
+    }
+    this.timeoutHandles = [];
   }
 
   _countAndSetIterationSteps() {
@@ -304,10 +319,10 @@ export default class MusicEngine {
     const id = `id-${start.toString() + end.toString()}`;
     let container = this.createContainer(id);
     console.log(container);
-    this.getInstanceOSMD(container).then(async (instance)=>{
+    this.getInstanceOSMD(container).then(async instance => {
       console.log(instance);
       console.log(this.scoreUrl);
-    
+
       const scoreXml = await axios.get(this.scoreUrl);
       await instance.load(scoreXml.data);
 
@@ -316,10 +331,7 @@ export default class MusicEngine {
         drawUpToMeasureNumber: end
       });
       instance.render();
-      
     });
-
-
   }
 
   /**
@@ -385,10 +397,5 @@ export default class MusicEngine {
   setZoom(zoom) {
     this.osmd.zoom = zoom;
     this.osmd.render();
-  }
-
-  // 来自 piano-relish-master
-  playNote(keyId) {
-    this.SoundService.playNote(keyId);
   }
 }

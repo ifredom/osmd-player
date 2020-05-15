@@ -13,7 +13,7 @@ module.exports = {
   // 那么将这个值改为 `/my-app/`
   publicPath: "./",
   // 将构建好的文件输出到哪里
-  outputDir: "dist",
+  outputDir: "../assets/webview/dist",
   // eslint-loader 是否在保存的时候检查
   lintOnSave: false,
   // https://webpack.js.org/configuration/dev-server/
