@@ -12,7 +12,7 @@
     "babel-polyfill": "^6.26.0",
     "classlist-polyfill": "^1.2.0",
     "core-js": "^3.6.5",
-    "axios": "^0.19.2",
+    "axios": "^0.21.1",
     "opensheetmusicdisplay": "0.7.3",
     "raphael": "^2.3.0",
     "soundfont-player": "^0.12.0",
